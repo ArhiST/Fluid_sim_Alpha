@@ -57,9 +57,9 @@ namespace ConsoleApp7
             return Polys;
         }
 
-        public static double[] SphereCreator(int n, double Radius)
+        public static float[] SphereCreator(int n, float Radius)
         {
-            double[] verticies = new double[n * n * 3];
+            float[] verticies = new float[n * n * 3];
             int num = 3;    
             double Rad = 2 * Math.PI / n;
             verticies[0] = 0;
@@ -70,7 +70,7 @@ namespace ConsoleApp7
                 double RotateAngle = Rad * i;
                 double _Radius = Radius * Math.Abs(Math.Sin(RotateAngle));
                 double z = Radius * Math.Cos(RotateAngle);
-                double[] Circle = CreateCircleSphere(n, _Radius, z);                
+                float[] Circle = CreateCircleSphere(n, _Radius, z);                
 
                 for(int j = 0; j < Circle.Length; j++)
                 {
@@ -174,21 +174,21 @@ namespace ConsoleApp7
             return Poly;
         }
 
-        public static double[] CreateCircleSphere(int n, double Radius, double z)
+        public static float[] CreateCircleSphere(int n, double  Radius, double z)
         {
             int num = 0;
-            double[] verticies = new double[n * 3];
+            float[] verticies = new float[n * 3];
             double Rad = 2 * Math.PI / Convert.ToDouble(n);            
             for (int i = 0; i < n; i++)
             {
                 double Param = Rad * i;
                 double x = Radius * Math.Cos(Param);
                 double y = Radius * Math.Sin(Param);
-                verticies[num] = x;
+                verticies[num] = (float)x;
                 num++;
-                verticies[num] = y;
+                verticies[num] = (float)y;
                 num++;
-                verticies[num] = z;
+                verticies[num] = (float)z;
                 num++;
             }
 
