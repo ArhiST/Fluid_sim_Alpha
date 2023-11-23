@@ -11,8 +11,8 @@ namespace ConsoleApp7
 {
     internal class Window : GameWindow
     {
-        static int Segments = 3;
-        private double[] _verticies = CreateN.SphereCreator(Segments, 0.5d);        
+        static int Segments = 14;
+        private float[] _verticies = CreateN.SphereCreator(Segments, 0.25f);        
 
         private readonly uint[] _indices = CreateN.SpherePolygonsCreator(Segments);      
        
@@ -36,11 +36,11 @@ namespace ConsoleApp7
             GL.ClearColor(0f, 0f, 0.2f, 0f);
             _vertexBufferObject = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, _verticies.Length * sizeof(double), _verticies, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, _verticies.Length * sizeof(float), _verticies, BufferUsageHint.StaticDraw);
             _vertexArrayObject = GL.GenVertexArray();
             GL.BindVertexArray(_vertexArrayObject);
 
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Double, false, 3 * sizeof(double), 0);
+            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
             GL.EnableVertexAttribArray(0);            
 
             _elementBufferObject = GL.GenBuffer();
@@ -57,14 +57,17 @@ namespace ConsoleApp7
         {
             base.OnRenderFrame(e);
             GL.Clear(ClearBufferMask.ColorBufferBit);
+            double TimeValue = _timer.Elapsed.TotalSeconds;
             var transform = Matrix4.Identity;
+            //Vector3 Velocity = (0f, -0.981f *  (float)TimeValue, 0f);
+            
 
             //transform = transform * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(70f));
+            //transform = transform * Matrix4.CreateTranslation(Velocity);
 
             _shader.SetMatrix4("transform", transform);
 
-            _shader.Use();
-            double TimeValue = _timer.Elapsed.TotalSeconds;            
+            _shader.Use();                       
             float ColorValue = (float)Math.Sin(TimeValue);            
             float ColorValue3 = -(float)Math.Sin(TimeValue);
             int vertexColorLocation = GL.GetUniformLocation(_shader.Handle, "ourColor");
@@ -77,6 +80,7 @@ namespace ConsoleApp7
         {
             base.OnUpdateFrame(e);
             var input = KeyboardState;
+            
         }
         protected override void OnResize(ResizeEventArgs e)
         {
