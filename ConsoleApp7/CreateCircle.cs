@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OpenTK.Mathematics;
 
 namespace ConsoleApp7
 {
@@ -57,20 +58,20 @@ namespace ConsoleApp7
             return Polys;
         }
 
-        public static float[] SphereCreator(int n, float Radius)
+        public static float[] SphereCreator(int n, float Radius, Vector3 Position)
         {
-            float[] verticies = new float[n * n * 3];
+            float[] verticies = new float[6 + (n-2) * n * 3];
             int num = 3;    
             double Rad = 2 * Math.PI / n;
-            verticies[0] = 0;
-            verticies[1] = 0;
-            verticies[2] = Radius;
+            verticies[0] = Position.X;
+            verticies[1] = Position.Y;
+            verticies[2] = Radius + Position.Z;
             for (int i = 1; i < n-1; i++)
             {
                 double RotateAngle = Rad * i;
                 double _Radius = Radius * Math.Abs(Math.Sin(RotateAngle));
                 double z = Radius * Math.Cos(RotateAngle);
-                float[] Circle = CreateCircleSphere(n, _Radius, z);                
+                float[] Circle = CreateCircleSphere(n, _Radius, z, Position);                
 
                 for(int j = 0; j < Circle.Length; j++)
                 {
@@ -78,11 +79,11 @@ namespace ConsoleApp7
                     num++;
                 }
             }
-            verticies[num] = 0;
+            verticies[num] = 0 + Position.X;
             num++;
-            verticies[num] = 0;
+            verticies[num] = 0 + Position.Y;
             num++;
-            verticies[num] = Radius;
+            verticies[num] = - Radius + Position.Z;
             num++;
             return verticies;
         }
@@ -174,7 +175,7 @@ namespace ConsoleApp7
             return Poly;
         }
 
-        public static float[] CreateCircleSphere(int n, double  Radius, double z)
+        public static float[] CreateCircleSphere(int n, double  Radius, double z, Vector3 Position)
         {
             int num = 0;
             float[] verticies = new float[n * 3];
@@ -184,11 +185,11 @@ namespace ConsoleApp7
                 double Param = Rad * i;
                 double x = Radius * Math.Cos(Param);
                 double y = Radius * Math.Sin(Param);
-                verticies[num] = (float)x;
+                verticies[num] = (float)x + Position.X;
                 num++;
-                verticies[num] = (float)y;
+                verticies[num] = (float)y + Position.Y;
                 num++;
-                verticies[num] = (float)z;
+                verticies[num] = (float)z + Position.Z;
                 num++;
             }
 

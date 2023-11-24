@@ -12,9 +12,10 @@ namespace ConsoleApp7
 {
     internal class Window : GameWindow
     {
-        static int Segments = 32;
-        private float[] _verticies = CreateN.SphereCreator(Segments, 0.45f);        
-
+        static int Segments = 10;
+        static Vector3 pos = (0f, 1f, 2f);
+        private float[] _verticies = CreateN.SphereCreator(Segments, 0.5f, pos);       
+        
         private readonly uint[] _indices = CreateN.SpherePolygonsCreator(Segments);      
        
         private int _vertexBufferObject;
@@ -22,19 +23,24 @@ namespace ConsoleApp7
         private int _elementBufferObject;
 
         private double _time;
+        float Velocity;
+        float Y;
+        float k = 0.8f;
+                
+        private Camera _camera;
 
-        private Matrix4 _projection; // 
-        private Matrix4 _view; //
+        private Matrix4 projection;
+        private Matrix4 view;
 
         private Stopwatch _timer;
         private Shader _shader;
         public Window(GameWindowSettings Settings, NativeWindowSettings nativeWindowSettings)
             : base(Settings, nativeWindowSettings)
         {
-            /*foreach (var v in _indices)
+            foreach (var v in _verticies)
             {
                 Console.Write(v + "  ");
-            }*/
+            }
         }
 
         protected override void OnLoad()
@@ -55,34 +61,40 @@ namespace ConsoleApp7
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);            
             GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
 
-            _shader = new Shader("C:\\Users\\Ultrabook-13\\source\\repos\\ArhiST\\Fluid_sim_Alpha\\shader.vert",
-                "C:\\Users\\Ultrabook-13\\source\\repos\\ArhiST\\Fluid_sim_Alpha\\shader.frag");
+            _shader = new Shader("C:\\Users\\Stepan\\source\\repos\\ConsoleApp7\\shader.vert",
+                "C:\\Users\\Stepan\\source\\repos\\ConsoleApp7\\shader.frag");
             _shader.Use();
 
             _timer = new Stopwatch();
             _timer.Start();
 
-            _view = Matrix4.CreateTranslation(0f, 0f, -3f);
-            _projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45f), Size.X / (float)Size.Y, 0.1f, 100f);
+            _camera = new Camera(Vector3.UnitZ * 6, Size.X / (float)Size.Y);
+                       
+            
         }
         protected override void OnRenderFrame(FrameEventArgs e)
         {
             base.OnRenderFrame(e);
+            
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
             _time = e.Time;
             double TimeValue = _timer.Elapsed.TotalSeconds;
             var transform = Matrix4.Identity;
-            transform = transform * Matrix4.CreateRotationX((float)_time);
-            //Vector3 Velocity = (0f, -0.981f *  (float)TimeValue, 0f);
-
-            var model = Matrix4.Identity * Matrix4.CreateTranslation(0.05f, 0.05f*(float)TimeValue, 0f);
-            //transform = transform * Matrix4.CreateRotationY(MathHelper.DegreesToRadians(70f));
-            //transform = transform * Matrix4.CreateTranslation(Velocity);
-
-            //_shader.SetMatrix4("transform", transform);
+            transform = transform * Matrix4.CreateRotationX((float)_time);           
+            Velocity = Velocity - 9.81f * (float)_time;            
+            float Delta_Y = Velocity * (float)_time;                        
+            Y += Delta_Y;            
+            if(Y < -4.6f)                  //как фиксить лаг ебаный 
+            {
+                Velocity = -Velocity * k;
+            }
+            view = _camera.GetViewMatrix();
+            projection = _camera.GetProjectionMatrix();
+            var model = Matrix4.Identity * Matrix4.CreateTranslation(0f, Y, 0f);
+            
             _shader.SetMatrix4("model", model);
-            _shader.SetMatrix4("view", _view);
-            _shader.SetMatrix4("projection", _projection);
+            _shader.SetMatrix4("view", view);
+            _shader.SetMatrix4("projection", projection);
 
             _shader.Use();                       
             float ColorValue = (float)Math.Sin(TimeValue);            
@@ -96,6 +108,10 @@ namespace ConsoleApp7
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
+            if (!IsFocused) // Check to see if the window is focused
+            {
+                return;
+            }
             var input = KeyboardState;
             
         }
@@ -103,6 +119,7 @@ namespace ConsoleApp7
         {
             base.OnResize(e);
             GL.Viewport(0, 0, Size.X, Size.Y);
+            _camera.AspectRatio = Size.X / (float)Size.Y;
         }
         protected override void OnUnload()
         {
