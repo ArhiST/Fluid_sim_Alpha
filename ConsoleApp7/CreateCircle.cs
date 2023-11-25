@@ -79,39 +79,33 @@ namespace ConsoleApp7
                     num++;
                 }
             }
-            verticies[num] = 0 + Position.X;
+            verticies[num] = Position.X;
             num++;
-            verticies[num] = 0 + Position.Y;
+            verticies[num] = Position.Y;
             num++;
             verticies[num] = - Radius + Position.Z;
             num++;
             return verticies;
         }
 
-        public static uint[] SpherePolygonsCreator(int n)
+        public static uint[] SpherePolygonsCreator(int n, uint offset)
         {
-            uint[] Poly = new uint[6 * n * n];
-            int num = 0;
+            List<uint> Polys = new List<uint>();
+            //uint[] Poly = new uint[6 * (n-1) * n + 6];            
             for(int i = 0; i < n; i++)
             {
                 if(i == 0)
                 {
                     for(int j = 0; j < n; j++)
                     {
-                        Poly[num] = 0;
-                        num++;
-                        Poly[num] = Convert.ToUInt32(j+1);  
-                        num++;
-                        Poly[num] = Convert.ToUInt32(j + 2);
-                        num++;
+                        Polys.Add(offset);                        
+                        Polys.Add(Convert.ToUInt32(j+1) + offset);
+                        Polys.Add(Convert.ToUInt32(j + 2) + offset);                        
                         if (j == n-1)
-                        {
-                            Poly[num] = 0;                               
-                            num++;
-                            Poly[num] = Convert.ToUInt32(n);
-                            num++;
-                            Poly[num] = 1;
-                            num++;
+                        {                            
+                            Polys.Add(offset);                             
+                            Polys.Add(Convert.ToUInt32(n) + offset);                            
+                            Polys.Add(offset + 1);                            
                         }
                     }
                 }
@@ -119,33 +113,21 @@ namespace ConsoleApp7
                 {
                     for(int j = 0;j < n; j++)
                     {
-                        Poly[num] = Convert.ToUInt32(1 + n * (i-1)+j);
-                        num++;
-                        Poly[num] = Convert.ToUInt32(1 + n * i + j);
-                        num++;
-                        Poly[num] = Convert.ToUInt32(1 + n * (i - 1) + j + 1);
-                        num++;
-                        Poly[num] = Convert.ToUInt32(1 + n * (i - 1) + j + 1);
-                        num++;
-                        Poly[num] = Convert.ToUInt32(1 + n * i + j + 1);
-                        num++;
-                        Poly[num] = Convert.ToUInt32(1 + n * i + j);
-                        num++;
+                        Polys.Add(Convert.ToUInt32(1 + n * (i - 1) + j) + offset);                        
+                        Polys.Add(Convert.ToUInt32(1 + n * i + j) + offset);                        
+                        Polys.Add(Convert.ToUInt32(1 + n * (i - 1) + j + 1) + offset);                        
+                        Polys.Add(Convert.ToUInt32(1 + n * (i - 1) + j + 1) + offset);                        
+                        Polys.Add(Convert.ToUInt32(1 + n * i + j + 1) + offset);                        
+                        Polys.Add(Convert.ToUInt32(1 + n * i + j) + offset);                        
 
                         if (j == n)
                         {
-                            Poly[num] = Convert.ToUInt32(1 + n * (i - 1));
-                            num++;
-                            Poly[num] = Convert.ToUInt32(1 + n * i);
-                            num++;
-                            Poly[num] = Convert.ToUInt32(1 + n * (i - 1) - 1);
-                            num++;
-                            Poly[num] = Convert.ToUInt32(1 + n * (i - 1) - 1);
-                            num++;
-                            Poly[num] = Convert.ToUInt32(1 + n * i - 1);
-                            num++;
-                            Poly[num] = Convert.ToUInt32(1 + n * i);
-                            num++;
+                            Polys.Add(Convert.ToUInt32(1 + n * (i - 1)) + offset);                            
+                            Polys.Add(Convert.ToUInt32(1 + n * i) + offset);                            
+                            Polys.Add(Convert.ToUInt32(1 + n * (i - 1) - 1) + offset);                            
+                            Polys.Add(Convert.ToUInt32(1 + n * (i - 1) - 1) + offset);                            
+                            Polys.Add(Convert.ToUInt32(1 + n * i - 1) + offset);                           
+                            Polys.Add(Convert.ToUInt32(1 + n * i) + offset);                            
                         }
                     }                    
                 }
@@ -154,23 +136,22 @@ namespace ConsoleApp7
                 {
                     for (int j = 0; j < n; j++)
                     {
-                        Poly[num] = Convert.ToUInt32(1 + (n-2) * i);
-                        num++;
-                        Poly[num] = Convert.ToUInt32(1 + (n-2) * i);
-                        num++;
-                        Poly[num] = Convert.ToUInt32((i - 1) * n + j + 2);
-                        num++;
+                        Polys.Add(Convert.ToUInt32(1 + (n - 2) * i) + offset);                        
+                        Polys.Add(Convert.ToUInt32(1 + (n - 2) * i) + offset);                        
+                        Polys.Add(Convert.ToUInt32((i - 1) * n + j + 2) + offset);                        
                         if (j == n - 1)
                         {
-                            Poly[num] = Convert.ToUInt32(1 + (n - 2) * i);
-                            num++;
-                            Poly[num] = Convert.ToUInt32((n - 2) * i);
-                            num++;
-                            Poly[num] = Convert.ToUInt32((i - 1) * n + j -2);
-                            num++;
+                            Polys.Add(Convert.ToUInt32(1 + (n - 2) * i) + offset);                            
+                            Polys.Add(Convert.ToUInt32((n - 2) * i) + offset);                            
+                            Polys.Add(Convert.ToUInt32((i - 1) * n + j - 2) + offset);                            
                         }
                     }
                 }
+            }
+            uint[] Poly = new uint[Polys.Count];
+            for (int i = 0; i < Polys.Count; i++)
+            {
+                Poly[i] = Polys[i];
             }
             return Poly;
         }

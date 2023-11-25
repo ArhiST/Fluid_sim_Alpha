@@ -12,11 +12,14 @@ namespace ConsoleApp7
 {
     internal class Window : GameWindow
     {
-        static int Segments = 10;
-        static Vector3 pos = (0f, 1f, 2f);
-        private float[] _verticies = CreateN.SphereCreator(Segments, 0.5f, pos);       
+        int Nums = 2;
+        static int Segments = 3;
+        static float Radius = 0.35f;
+        uint offset = 0;
+               
+        List<float> _verticies = new List<float>();
         
-        private readonly uint[] _indices = CreateN.SpherePolygonsCreator(Segments);      
+        List<uint> _indicies = new List<uint>();
        
         private int _vertexBufferObject;
         private int _vertexArrayObject;
@@ -25,7 +28,7 @@ namespace ConsoleApp7
         private double _time;
         float Velocity;
         float Y;
-        float k = 0.8f;
+        float k = 1.05f;
                 
         private Camera _camera;
 
@@ -37,10 +40,27 @@ namespace ConsoleApp7
         public Window(GameWindowSettings Settings, NativeWindowSettings nativeWindowSettings)
             : base(Settings, nativeWindowSettings)
         {
-            foreach (var v in _verticies)
+            /*foreach (var v in _verticies)
             {
                 Console.Write(v + "  ");
+            }*/
+            for(int i = 0; i < Nums; i++)
+            {
+                Vector3 pos = (0f, i * 2f, 0f); 
+                float[] _verts = CreateN.SphereCreator(Segments, Radius, pos);
+                for(int j = 0; j < _verts.Length; j++)
+                {
+                    _verticies.Add(_verts[j]);
+                }
+                uint[] _inds = CreateN.SpherePolygonsCreator(Segments, offset);
+                for(int j =0; j < _inds.Length; j++)
+                {
+                    Console.WriteLine(_inds[j] + "  " + i);    
+                    _indicies.Add(_inds[j]);
+                    offset = Convert.ToUInt16(_verts.Length / 3);
+                }
             }
+            
         }
 
         protected override void OnLoad()
@@ -48,9 +68,21 @@ namespace ConsoleApp7
             base.OnLoad();
             GL.ClearColor(0f, 0f, 0.3f, 1f);
             GL.Enable(EnableCap.DepthTest);
+
+            float[] verts = new float[_verticies.Count];
+            for (int i = 0; i < _verticies.Count; i++)
+            {
+                verts[i] = _verticies[i];
+            }
+            uint[] inds = new uint[_indicies.Count];
+            for (int i = 0; i < _indicies.Count; i++)
+            {
+                inds[i] = _indicies[i];
+            }
+
             _vertexBufferObject = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, _verticies.Length * sizeof(float), _verticies, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ArrayBuffer, verts.Length * sizeof(float), verts, BufferUsageHint.StaticDraw);
             _vertexArrayObject = GL.GenVertexArray();
             GL.BindVertexArray(_vertexArrayObject);
 
@@ -59,7 +91,7 @@ namespace ConsoleApp7
 
             _elementBufferObject = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);            
-            GL.BufferData(BufferTarget.ElementArrayBuffer, _indices.Length * sizeof(uint), _indices, BufferUsageHint.StaticDraw);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, inds.Length * sizeof(uint), inds, BufferUsageHint.StaticDraw);
 
             _shader = new Shader("C:\\Users\\Stepan\\source\\repos\\ConsoleApp7\\shader.vert",
                 "C:\\Users\\Stepan\\source\\repos\\ConsoleApp7\\shader.frag");
@@ -77,6 +109,13 @@ namespace ConsoleApp7
             base.OnRenderFrame(e);
             
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+
+            uint[] inds = new uint[_indicies.Count];
+            for (int i = 0; i < _indicies.Count; i++)       //нужен фикс памяти 
+            {
+                inds[i] = _indicies[i];
+            }
+
             _time = e.Time;
             double TimeValue = _timer.Elapsed.TotalSeconds;
             var transform = Matrix4.Identity;
@@ -102,7 +141,7 @@ namespace ConsoleApp7
             int vertexColorLocation = GL.GetUniformLocation(_shader.Handle, "ourColor");
             GL.Uniform4(vertexColorLocation,1f, 0f, 0f, 1.0f);
             GL.BindVertexArray(_vertexArrayObject);
-            GL.DrawElements(PrimitiveType.Triangles, _indices.Length, DrawElementsType.UnsignedInt, 0);            
+            GL.DrawElements(PrimitiveType.Triangles, inds.Length, DrawElementsType.UnsignedInt, 0);            
             SwapBuffers();
         }
         protected override void OnUpdateFrame(FrameEventArgs e)
