@@ -12,20 +12,16 @@ namespace ConsoleApp7
 {
     internal class Window : GameWindow
     {
-        static int Nums = 4;
-        uint Segments = 32;
-        float Radius = 0.4f;        
-        Vector3 Coordinates = (0f, 0f, 0f);
+        static int resolution = 4;
+        static int Nums = resolution * resolution;
+        uint Segments = 20;
+        static float Radius = 0.3f;
+        static float grid = Radius + 0.1f;
+        Vector3 Coordinates = (-2 * grid * resolution / 2, 0.8f * grid * resolution + 4f, 0f);
 
         Sphere[] sphere = new Sphere[Nums];
-        int offset = 0;
-
-        List<float> _verticies = new List<float>();
+        int offset = 0;           
         
-        List<uint> _indicies = new List<uint>();
-       
-        
-
         private double _time;
         
                 
@@ -43,7 +39,9 @@ namespace ConsoleApp7
 
         public Window(GameWindowSettings Settings, NativeWindowSettings nativeWindowSettings)
             : base(Settings, nativeWindowSettings)
-        {                        
+        {
+            VSync = VSyncMode.On;          
+            
         }
 
         protected override void OnLoad()
@@ -56,8 +54,14 @@ namespace ConsoleApp7
 
             for (uint i = 0; i < Nums; i++)
             {
+                if (i % resolution == 0)
+                {
+                    Coordinates = (Coordinates.X + 2 * grid, Coordinates.Y - 2 * grid * resolution, Coordinates.Z);
+                }
                 sphere[i] = new Sphere(Radius, Segments, Coordinates, offset);
-                Coordinates = (Coordinates.X, Coordinates.Y + 1.5f, Coordinates.Z);
+                
+                Coordinates = (Coordinates.X, Coordinates.Y + 2 * grid, Coordinates.Z);
+                
                 offset++;
             }           
 
@@ -68,7 +72,7 @@ namespace ConsoleApp7
             _timer = new Stopwatch();
             _timer.Start();
 
-            _camera = new Camera(Vector3.UnitZ * 7, Size.X / (float)Size.Y);
+            _camera = new Camera(Vector3.UnitZ * 20, Size.X / (float)Size.Y);
                        
             
         }
@@ -107,20 +111,28 @@ namespace ConsoleApp7
         {
             base.OnUpdateFrame(e);
 
-            _time = e.Time;
+            _time = e.Time;            
             float FPS = 1 / (float)_time;
             Console.WriteLine(FPS);
             
             for(int i = 0; i < Nums; i++)
             {
+
                 sphere[i].Velocity_Y = sphere[i].Velocity_Y - 9.81f * (float)_time;
-                if (sphere[i].Position.Y < -5f)
-                {
-                    sphere[i].Velocity_Y = -sphere[i].Velocity_Y * sphere[i].k;
-                }
                 float Delta_Y = sphere[i].Velocity_Y * (float)_time;
+                if (sphere[i].Position.Y < -6f)
+                {   
+                    Delta_Y = -Delta_Y;
+                    sphere[i].Velocity_Y = -sphere[i].Velocity_Y * sphere[i].k;
+                    if(sphere[i].Velocity_Y < 0.3f)
+                    {
+                        sphere[i].Velocity_Y = 0;
+                    }
+                }
+                
                 float Delta_X = sphere[i].Velocity_X * (float)_time;
                 float Delta_Z = sphere[i].Velocity_Z * (float)_time;
+                
                 Matrix4 Translation = Matrix4.CreateTranslation(Delta_X, Delta_Y, Delta_Z);
 
                 sphere[i].Move(Translation);
@@ -132,6 +144,11 @@ namespace ConsoleApp7
                 return;
             }
             var input = KeyboardState;
+            /*float cameraSpeed = 3f;             
+            if (input.IsKeyPressed(Keys.S))
+            {
+                _camera.Position -= _camera.Front * cameraSpeed * (float)e.Time;
+            }*/
             
         }
         protected override void OnResize(ResizeEventArgs e)

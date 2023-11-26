@@ -18,8 +18,8 @@ namespace ConsoleApp7
         public float Velocity_X;
         public float Velocity_Y;
         public float Velocity_Z;
-        public float k = 1.05f;
-
+        public float k = 0.75f;
+        
         public int VBO;
         public int VAO;
         public int EBO;
@@ -58,7 +58,7 @@ namespace ConsoleApp7
                 verticies[4 * i + 1] = res.Y;
                 verticies[4 * i + 2] = res.Z;
                 verticies[4 * i + 3] = res.W;
-                Position.Y = res.Y;
+                Position.Y = res.Y;                 
                 /*Coordinates.X += (res.X - vec.X);
                 Coordinates.Y += (res.Y - vec.Y);
                 Coordinates.Z += (res.Z - vec.Z);*/
@@ -72,6 +72,7 @@ namespace ConsoleApp7
             GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
             GL.EnableVertexAttribArray(0);
         }
+                
 
         public float[] CreateSphere(float Radius, uint Segments, Vector3 Coordinates)
         {
