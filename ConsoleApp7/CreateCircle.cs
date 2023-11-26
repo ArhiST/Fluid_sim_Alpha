@@ -90,8 +90,7 @@ namespace ConsoleApp7
 
         public static uint[] SpherePolygonsCreator(int n, uint offset)
         {
-            List<uint> Polys = new List<uint>();
-            //uint[] Poly = new uint[6 * (n-1) * n + 6];            
+            List<uint> Polys = new List<uint>();                        
             for(int i = 0; i < n; i++)
             {
                 if(i == 0)

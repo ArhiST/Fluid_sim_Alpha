@@ -12,23 +12,22 @@ namespace ConsoleApp7
 {
     internal class Window : GameWindow
     {
-        int Nums = 2;
-        static int Segments = 3;
-        static float Radius = 0.35f;
-        uint offset = 0;
-               
+        static int Nums = 4;
+        uint Segments = 32;
+        float Radius = 0.4f;        
+        Vector3 Coordinates = (0f, 0f, 0f);
+
+        Sphere[] sphere = new Sphere[Nums];
+        int offset = 0;
+
         List<float> _verticies = new List<float>();
         
         List<uint> _indicies = new List<uint>();
        
-        private int _vertexBufferObject;
-        private int _vertexArrayObject;
-        private int _elementBufferObject;
+        
 
         private double _time;
-        float Velocity;
-        float Y;
-        float k = 1.05f;
+        
                 
         private Camera _camera;
 
@@ -37,30 +36,14 @@ namespace ConsoleApp7
 
         private Stopwatch _timer;
         private Shader _shader;
+
+        public int VBO;
+        public int VAO;
+        public int EBO;
+
         public Window(GameWindowSettings Settings, NativeWindowSettings nativeWindowSettings)
             : base(Settings, nativeWindowSettings)
-        {
-            /*foreach (var v in _verticies)
-            {
-                Console.Write(v + "  ");
-            }*/
-            for(int i = 0; i < Nums; i++)
-            {
-                Vector3 pos = (0f, i * 2f, 0f); 
-                float[] _verts = CreateN.SphereCreator(Segments, Radius, pos);
-                for(int j = 0; j < _verts.Length; j++)
-                {
-                    _verticies.Add(_verts[j]);
-                }
-                uint[] _inds = CreateN.SpherePolygonsCreator(Segments, offset);
-                for(int j =0; j < _inds.Length; j++)
-                {
-                    Console.WriteLine(_inds[j] + "  " + i);    
-                    _indicies.Add(_inds[j]);
-                    offset = Convert.ToUInt16(_verts.Length / 3);
-                }
-            }
-            
+        {                        
         }
 
         protected override void OnLoad()
@@ -69,29 +52,14 @@ namespace ConsoleApp7
             GL.ClearColor(0f, 0f, 0.3f, 1f);
             GL.Enable(EnableCap.DepthTest);
 
-            float[] verts = new float[_verticies.Count];
-            for (int i = 0; i < _verticies.Count; i++)
+
+
+            for (uint i = 0; i < Nums; i++)
             {
-                verts[i] = _verticies[i];
-            }
-            uint[] inds = new uint[_indicies.Count];
-            for (int i = 0; i < _indicies.Count; i++)
-            {
-                inds[i] = _indicies[i];
-            }
-
-            _vertexBufferObject = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ArrayBuffer, _vertexBufferObject);
-            GL.BufferData(BufferTarget.ArrayBuffer, verts.Length * sizeof(float), verts, BufferUsageHint.StaticDraw);
-            _vertexArrayObject = GL.GenVertexArray();
-            GL.BindVertexArray(_vertexArrayObject);
-
-            GL.VertexAttribPointer(0, 3, VertexAttribPointerType.Float, false, 3 * sizeof(float), 0);
-            GL.EnableVertexAttribArray(0);            
-
-            _elementBufferObject = GL.GenBuffer();
-            GL.BindBuffer(BufferTarget.ElementArrayBuffer, _elementBufferObject);            
-            GL.BufferData(BufferTarget.ElementArrayBuffer, inds.Length * sizeof(uint), inds, BufferUsageHint.StaticDraw);
+                sphere[i] = new Sphere(Radius, Segments, Coordinates, offset);
+                Coordinates = (Coordinates.X, Coordinates.Y + 1.5f, Coordinates.Z);
+                offset++;
+            }           
 
             _shader = new Shader("C:\\Users\\Stepan\\source\\repos\\ConsoleApp7\\shader.vert",
                 "C:\\Users\\Stepan\\source\\repos\\ConsoleApp7\\shader.frag");
@@ -100,7 +68,7 @@ namespace ConsoleApp7
             _timer = new Stopwatch();
             _timer.Start();
 
-            _camera = new Camera(Vector3.UnitZ * 6, Size.X / (float)Size.Y);
+            _camera = new Camera(Vector3.UnitZ * 7, Size.X / (float)Size.Y);
                        
             
         }
@@ -108,29 +76,15 @@ namespace ConsoleApp7
         {
             base.OnRenderFrame(e);
             
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-            uint[] inds = new uint[_indicies.Count];
-            for (int i = 0; i < _indicies.Count; i++)       //нужен фикс памяти 
-            {
-                inds[i] = _indicies[i];
-            }
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);                      
 
             _time = e.Time;
             double TimeValue = _timer.Elapsed.TotalSeconds;
-            var transform = Matrix4.Identity;
-            transform = transform * Matrix4.CreateRotationX((float)_time);           
-            Velocity = Velocity - 9.81f * (float)_time;            
-            float Delta_Y = Velocity * (float)_time;                        
-            Y += Delta_Y;            
-            if(Y < -4.6f)                  //как фиксить лаг ебаный 
-            {
-                Velocity = -Velocity * k;
-            }
+            var model = Matrix4.Identity;                       
+            
             view = _camera.GetViewMatrix();
             projection = _camera.GetProjectionMatrix();
-            var model = Matrix4.Identity * Matrix4.CreateTranslation(0f, Y, 0f);
-            
+                        
             _shader.SetMatrix4("model", model);
             _shader.SetMatrix4("view", view);
             _shader.SetMatrix4("projection", projection);
@@ -140,13 +94,39 @@ namespace ConsoleApp7
             float ColorValue3 = -(float)Math.Sin(TimeValue);
             int vertexColorLocation = GL.GetUniformLocation(_shader.Handle, "ourColor");
             GL.Uniform4(vertexColorLocation,1f, 0f, 0f, 1.0f);
-            GL.BindVertexArray(_vertexArrayObject);
-            GL.DrawElements(PrimitiveType.Triangles, inds.Length, DrawElementsType.UnsignedInt, 0);            
+            for(int i = 0; i < sphere.Length; i++)
+            {
+                GL.BindVertexArray(sphere[i].VAO);
+                GL.DrawElements(PrimitiveType.Triangles, sphere[i].Indicies.Length, DrawElementsType.UnsignedInt, 0);
+                
+            }
             SwapBuffers();
+            
         }
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
+
+            _time = e.Time;
+            float FPS = 1 / (float)_time;
+            Console.WriteLine(FPS);
+            
+            for(int i = 0; i < Nums; i++)
+            {
+                sphere[i].Velocity_Y = sphere[i].Velocity_Y - 9.81f * (float)_time;
+                if (sphere[i].Position.Y < -5f)
+                {
+                    sphere[i].Velocity_Y = -sphere[i].Velocity_Y * sphere[i].k;
+                }
+                float Delta_Y = sphere[i].Velocity_Y * (float)_time;
+                float Delta_X = sphere[i].Velocity_X * (float)_time;
+                float Delta_Z = sphere[i].Velocity_Z * (float)_time;
+                Matrix4 Translation = Matrix4.CreateTranslation(Delta_X, Delta_Y, Delta_Z);
+
+                sphere[i].Move(Translation);
+            }
+            
+
             if (!IsFocused) // Check to see if the window is focused
             {
                 return;
@@ -165,8 +145,12 @@ namespace ConsoleApp7
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
             GL.UseProgram(0);
-            GL.DeleteBuffer(_vertexBufferObject);
-            GL.DeleteVertexArray(_vertexArrayObject);
+            for(int i = 0; i < Nums; i++)
+            {
+                GL.DeleteBuffer(sphere[i].VBO);
+                GL.DeleteVertexArray(sphere[i].VAO);
+            }
+            
             GL.DeleteProgram(_shader.Handle);
             base.OnUnload();
         }
