@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Mathematics;
 using OpenTK.Graphics.OpenGL4;
+using System.Reflection;
 
 namespace ConsoleApp7
 {
@@ -13,12 +14,13 @@ namespace ConsoleApp7
         float[] Verticies;
         public uint[] Indicies;        
         public Vector3 Position;
+        public Shader _shader;
 
 
         public float Velocity_X;
         public float Velocity_Y;
         public float Velocity_Z;
-        public float k = 0.75f;
+        public float k = 0.75f;        
         
         public int VBO;
         public int VAO;
@@ -28,7 +30,8 @@ namespace ConsoleApp7
         {
             //Coordinates = coordinates;
             Position = coordinates;
-            Verticies = CreateSphere(Radius, Segments, coordinates);
+            
+            Verticies = CreateSphere(Radius, Segments, (0f, 0f, 0f));
             Indicies = CreatIndicies(Segments);           
 
 
@@ -45,32 +48,15 @@ namespace ConsoleApp7
             EBO = GL.GenBuffer();
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, EBO);
             GL.BufferData(BufferTarget.ElementArrayBuffer, Indicies.Length * sizeof(uint), Indicies, BufferUsageHint.DynamicDraw);
+
+            _shader = new Shader("C:\\Users\\Ultrabook-13\\source\\repos\\ArhiST\\Fluid_sim_Alpha\\shader.vert",
+                "C:\\Users\\Ultrabook-13\\source\\repos\\ArhiST\\Fluid_sim_Alpha\\shader.frag");
+            _shader.Use();
         }
 
         public void Move(Matrix4 Translation)
-        {
-            float[] verticies = new float[Verticies.Length];
-            for (int i = 0; i < Verticies.Length / 4; i++)
-            {
-                Vector4 vec = (Verticies[4*i], Verticies[4 * i + 1], Verticies[4 * i + 2], Verticies[4 * i + 3]);
-                var res = vec * Translation;
-                verticies[4 * i] = res.X;
-                verticies[4 * i + 1] = res.Y;
-                verticies[4 * i + 2] = res.Z;
-                verticies[4 * i + 3] = res.W;
-                Position.Y = res.Y;                 
-                /*Coordinates.X += (res.X - vec.X);
-                Coordinates.Y += (res.Y - vec.Y);
-                Coordinates.Z += (res.Z - vec.Z);*/
-            }
-            for(int i = 0;i < Verticies.Length; i++)
-            {
-                Verticies[i] = verticies[i];
-            }
-            GL.BindBuffer(BufferTarget.ArrayBuffer, VBO);
-            GL.BufferData(BufferTarget.ArrayBuffer, Verticies.Length * sizeof(float), Verticies, BufferUsageHint.DynamicDraw);
-            GL.VertexAttribPointer(0, 4, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
-            GL.EnableVertexAttribArray(0);
+        {                       
+            _shader.SetMatrix4("translation", Translation);            
         }
                 
 
