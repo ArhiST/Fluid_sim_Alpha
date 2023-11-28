@@ -12,20 +12,28 @@ namespace ConsoleApp7
 {
     internal class Window : GameWindow
     {
+        public float k = 0.75f;
         static float BoundingBox_Y = -6.5f;
-        static int resolution = 13;
+        static int resolution = 10;
         static int Nums = resolution * resolution * resolution;
-        uint Segments = 20;
+        uint Segments = 10;
         static float Radius = 0.3f;
-        static float grid = Radius + 0.025f;
-        Vector3 Coordinates = (-2 * grid * resolution / 2, 0.8f * grid * resolution + 4f, -2 * grid * resolution / 2);
-
+        static float grid = Radius + 0.005f;
+        Vector3 Coordinates = (-2 * grid * resolution / 2, 0.8f * grid * resolution , -2 * grid * resolution / 2);
+        Vector3 CoordinatesC = (0f, 12f, 0f);
+        static float RadiusC = 0.75f;
         Sphere[] sphere = new Sphere[Nums];
+        Sphere Collider;
         int offset = 0;           
         
         private double _time;
-        
-                
+
+        float[] Verticies;
+        public uint[] Indicies;
+        public int VBO;
+        public int VAO;
+        public int EBO;
+
         private Camera _camera;
 
         private Matrix4 projection;
@@ -47,7 +55,8 @@ namespace ConsoleApp7
             GL.ClearColor(0f, 0f, 0.3f, 1f);
             GL.Enable(EnableCap.DepthTest);
 
-
+           /* Verticies = Sphere.CreateSphere(Radius, Segments, (0f, 0f, 0f));
+            Indicies = Sphere.CreatIndicies(Segments);*/
 
             for (uint i = 0; i < Nums; i++)
             {
@@ -64,14 +73,13 @@ namespace ConsoleApp7
                 Coordinates = (Coordinates.X, Coordinates.Y + 2 * grid, Coordinates.Z);
                 
                 offset++;
-            }           
-
-            
+            }        
+            Sphere Collider = new Sphere(RadiusC, Segments, CoordinatesC, offset);           
 
             _timer = new Stopwatch();
             _timer.Start();
 
-            _camera = new Camera(Vector3.UnitZ * 20, Size.X / (float)Size.Y);
+            _camera = new Camera(Vector3.UnitZ * 22, Size.X / (float)Size.Y);
             //_camera.Yaw = -90f;           
             
         }
@@ -79,9 +87,10 @@ namespace ConsoleApp7
         {
             base.OnRenderFrame(e);
             
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);                      
+            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
             _time = e.Time;
+            //_time = (1.0d / 75.0d);
             double TimeValue = _timer.Elapsed.TotalSeconds;
             var model = Matrix4.Identity;                       
             
@@ -108,42 +117,74 @@ namespace ConsoleApp7
         protected override void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
-            //double time;
-            _time = e.Time;            
-            double FrameRate = 60.0;
-            /*if (_time < (1/ 50))
-            {
-                _time = (1 / 60);
-            }*/
+
+            _time = e.Time;
+            //_time = (1.0d / 75.0d);
+            double FrameRate = 75;
+            
             float FPS = 1.0f / (float)_time;
             _time = Math.Min(_time, 1.0 / FrameRate);            
             Console.WriteLine(FPS);
             
             for(int i = 0; i < Nums; i++)
             {
+                if (sphere[i].SphereStop == false)
+                {
+                    Vector3 Distance;
 
-                sphere[i].Velocity_Y = sphere[i].Velocity_Y - 9.81f * (float)_time;
-                float Delta_Y = sphere[i].Velocity_Y * (float)_time;
-                if (sphere[i].Position.Y < BoundingBox_Y)
-                {   
-                    Delta_Y = -Delta_Y;
-                    sphere[i].Velocity_Y = -sphere[i].Velocity_Y * sphere[i].k;
-                    if(sphere[i].Velocity_Y < 0.25f)
+                    sphere[i].Velocity.Y = sphere[i].Velocity.Y - 9.81f * (float)_time;
+
+                    if (sphere[i].Position.Y < BoundingBox_Y)
                     {
-                        sphere[i].Velocity_Y = 0;
+                        sphere[i].Velocity.Y = -sphere[i].Velocity.Y * k;
+                        float mod = sphere[i].Velocity.X * sphere[i].Velocity.X + sphere[i].Velocity.Y * sphere[i].Velocity.Y
+                        + sphere[i].Velocity.Z * sphere[i].Velocity.Z;
+                        if (mod < 0.15f)
+                        {
+                            sphere[i].Velocity = (0f, 0f, 0f);
+                            sphere[i].SphereStop = true;
+                        }
                     }
-                }
-                
-                float Delta_X = sphere[i].Velocity_X * (float)_time;
-                float Delta_Z = sphere[i].Velocity_Z * (float)_time;
-                sphere[i].Position.X += Delta_X;
-                sphere[i].Position.Y += Delta_Y;
-                sphere[i].Position.Z += Delta_Z;
+                    for (int j = 0; j < Nums; j++)
+                    {
+                        if (j != i)
+                        {
+                            Distance = sphere[i].Position - sphere[j].Position;
+                            float length = Distance.X * Distance.X + Distance.Y * Distance.Y + Distance.Z * Distance.Z;
+                            if (length < (4 * Radius * Radius))
+                            {
+                                var temp = -sphere[i].Velocity * k;
+                                sphere[i].Velocity = -sphere[j].Velocity * k;
+                                sphere[j].Velocity = temp;
+                                float mod = sphere[i].Velocity.X * sphere[i].Velocity.X + sphere[i].Velocity.Y * sphere[i].Velocity.Y
+                                    + sphere[i].Velocity.Z * sphere[i].Velocity.Z;
+                                if (mod < 0.15f)
+                                {
+                                    sphere[i].Velocity = (0f, 0f, 0f);
+                                    sphere[i].SphereStop = true;
+                                }
+                                mod = sphere[j].Velocity.X * sphere[j].Velocity.X + sphere[j].Velocity.Y * sphere[j].Velocity.Y
+                                    + sphere[j].Velocity.Z * sphere[j].Velocity.Z;
+                                if (mod < 0.15f)
+                                {
+                                    sphere[j].Velocity = (0f, 0f, 0f);
+                                    sphere[j].SphereStop = true;
+                                }
+                            }
+                        }
+                    }
 
-                //Vector3 Translation = (Delta_X, Delta_Y, Delta_Z);
-                Matrix4 Translation = Matrix4.CreateTranslation(sphere[i].Position.X, sphere[i].Position.Y, sphere[i].Position.Z);
+                    float Delta_Y = sphere[i].Velocity.Y * (float)_time;
+                    float Delta_X = sphere[i].Velocity.X * (float)_time;
+                    float Delta_Z = sphere[i].Velocity.Z * (float)_time;
+                    sphere[i].Position.X += Delta_X;
+                    sphere[i].Position.Y += Delta_Y;
+                    sphere[i].Position.Z += Delta_Z;
 
-                sphere[i].Move(Translation);
+                    Matrix4 Translation = Matrix4.CreateTranslation(sphere[i].Position.X, sphere[i].Position.Y, sphere[i].Position.Z);
+
+                    sphere[i].Move(Translation);
+                }                
             }
             
 
@@ -170,7 +211,7 @@ namespace ConsoleApp7
             GL.BindBuffer(BufferTarget.ArrayBuffer, 0);
             GL.BindVertexArray(0);
             GL.UseProgram(0);
-            for(int i = 0; i < 2; i++)
+            for(int i = 0; i < Nums; i++)
             {
                 GL.DeleteBuffer(sphere[i].VBO);
                 GL.DeleteVertexArray(sphere[i].VAO);
@@ -180,5 +221,7 @@ namespace ConsoleApp7
             
             base.OnUnload();
         }
+
+        
     }
 }

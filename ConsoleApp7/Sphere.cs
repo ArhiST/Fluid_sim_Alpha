@@ -15,12 +15,13 @@ namespace ConsoleApp7
         public uint[] Indicies;        
         public Vector3 Position;
         public Shader _shader;
-
+        public Vector3 Velocity = (0f,0f,0f);
+        public bool SphereStop = false;
 
         public float Velocity_X;
         public float Velocity_Y;
         public float Velocity_Z;
-        public float k = 0.75f;        
+        //public float k = 0.75f;        
         
         public int VBO;
         public int VAO;
@@ -49,8 +50,8 @@ namespace ConsoleApp7
             GL.BindBuffer(BufferTarget.ElementArrayBuffer, EBO);
             GL.BufferData(BufferTarget.ElementArrayBuffer, Indicies.Length * sizeof(uint), Indicies, BufferUsageHint.DynamicDraw);
 
-            _shader = new Shader("C:\\Users\\Ultrabook-13\\source\\repos\\ArhiST\\Fluid_sim_Alpha\\shader.vert",
-                "C:\\Users\\Ultrabook-13\\source\\repos\\ArhiST\\Fluid_sim_Alpha\\shader.frag");
+            _shader = new Shader("C:\\Users\\Stepan\\source\\repos\\ConsoleApp7\\shader.vert",
+                "C:\\Users\\Stepan\\source\\repos\\ConsoleApp7\\shader.frag");
             _shader.Use();
         }
 
