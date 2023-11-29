@@ -16,7 +16,7 @@ namespace ConsoleApp7
         public Vector3 Position;
         public Shader _shader;
         public Vector3 Velocity = (0f,0f,0f);
-        public bool SphereStop = false;
+        //public bool SphereStop = false;
 
         public float Velocity_X;
         public float Velocity_Y;

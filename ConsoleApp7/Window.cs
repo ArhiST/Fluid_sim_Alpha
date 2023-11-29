@@ -16,7 +16,7 @@ namespace ConsoleApp7
         static float BoundingBox_Y = -6.5f;
         static int resolution = 10;
         static int Nums = resolution * resolution * resolution;
-        uint Segments = 10;
+        uint Segments = 40;
         static float Radius = 0.3f;
         static float grid = Radius + 0.005f;
         Vector3 Coordinates = (-2 * grid * resolution / 2, 0.8f * grid * resolution , -2 * grid * resolution / 2);
@@ -128,63 +128,57 @@ namespace ConsoleApp7
             
             for(int i = 0; i < Nums; i++)
             {
-                if (sphere[i].SphereStop == false)
+                Vector3 Distance;
+
+                sphere[i].Velocity.Y = sphere[i].Velocity.Y - 9.81f * (float)_time;
+                float Delta_Y = sphere[i].Velocity.Y * (float)_time;
+                float Delta_X = sphere[i].Velocity.X * (float)_time;
+                float Delta_Z = sphere[i].Velocity.Z * (float)_time;
+                sphere[i].Position.X += Delta_X;
+                sphere[i].Position.Y += Delta_Y;
+                sphere[i].Position.Z += Delta_Z;
+
+                if (sphere[i].Position.Y < BoundingBox_Y)
                 {
-                    Vector3 Distance;
-
-                    sphere[i].Velocity.Y = sphere[i].Velocity.Y - 9.81f * (float)_time;
-
-                    if (sphere[i].Position.Y < BoundingBox_Y)
+                    sphere[i].Velocity.Y = -sphere[i].Velocity.Y * k;
+                    sphere[i].Position.Y -= 2f * Delta_Y;
+                    //float mod = sphere[i].Velocity.LengthSquared;
+                    /*if (mod < 0.15f)
                     {
-                        sphere[i].Velocity.Y = -sphere[i].Velocity.Y * k;
-                        float mod = sphere[i].Velocity.X * sphere[i].Velocity.X + sphere[i].Velocity.Y * sphere[i].Velocity.Y
-                        + sphere[i].Velocity.Z * sphere[i].Velocity.Z;
-                        if (mod < 0.15f)
-                        {
-                            sphere[i].Velocity = (0f, 0f, 0f);
-                            sphere[i].SphereStop = true;
-                        }
-                    }
-                    for (int j = 0; j < Nums; j++)
+                        sphere[i].Velocity = (0f, 0f, 0f);                        
+                    }*/
+                }
+                for (int j = 0; j < Nums; j++)
+                {
+                    if (j > i)
                     {
-                        if (j != i)
+                        Distance = sphere[i].Position - sphere[j].Position;
+                        if (Distance.Length < (2 * Radius))
                         {
-                            Distance = sphere[i].Position - sphere[j].Position;
-                            float length = Distance.X * Distance.X + Distance.Y * Distance.Y + Distance.Z * Distance.Z;
-                            if (length < (4 * Radius * Radius))
+                            var temp = -sphere[i].Velocity * k;
+                            sphere[i].Velocity = -sphere[j].Velocity * k;
+                            sphere[j].Velocity = temp;
+                            sphere[i].Position.X -= 2f *Delta_X;
+                            sphere[i].Position.Y -= 2f * Delta_Y;
+                            sphere[i].Position.Z -= 2f * Delta_Z;
+                            //float mod = sphere[i].Velocity.LengthSquared;
+                            /*if (mod < 0.15f)
                             {
-                                var temp = -sphere[i].Velocity * k;
-                                sphere[i].Velocity = -sphere[j].Velocity * k;
-                                sphere[j].Velocity = temp;
-                                float mod = sphere[i].Velocity.X * sphere[i].Velocity.X + sphere[i].Velocity.Y * sphere[i].Velocity.Y
-                                    + sphere[i].Velocity.Z * sphere[i].Velocity.Z;
-                                if (mod < 0.15f)
-                                {
-                                    sphere[i].Velocity = (0f, 0f, 0f);
-                                    sphere[i].SphereStop = true;
-                                }
-                                mod = sphere[j].Velocity.X * sphere[j].Velocity.X + sphere[j].Velocity.Y * sphere[j].Velocity.Y
-                                    + sphere[j].Velocity.Z * sphere[j].Velocity.Z;
-                                if (mod < 0.15f)
-                                {
-                                    sphere[j].Velocity = (0f, 0f, 0f);
-                                    sphere[j].SphereStop = true;
-                                }
+                                sphere[i].Velocity = (0f, 0f, 0f);                                
                             }
+                            mod = sphere[i].Velocity.LengthSquared;
+                            if (mod < 0.15f)
+                            {
+                                sphere[j].Velocity = (0f, 0f, 0f);                                
+                            }*/
                         }
                     }
-
-                    float Delta_Y = sphere[i].Velocity.Y * (float)_time;
-                    float Delta_X = sphere[i].Velocity.X * (float)_time;
-                    float Delta_Z = sphere[i].Velocity.Z * (float)_time;
-                    sphere[i].Position.X += Delta_X;
-                    sphere[i].Position.Y += Delta_Y;
-                    sphere[i].Position.Z += Delta_Z;
-
-                    Matrix4 Translation = Matrix4.CreateTranslation(sphere[i].Position.X, sphere[i].Position.Y, sphere[i].Position.Z);
-
-                    sphere[i].Move(Translation);
                 }                
+                
+
+                Matrix4 Translation = Matrix4.CreateTranslation(sphere[i].Position);
+
+                sphere[i].Move(Translation);
             }
             
 
