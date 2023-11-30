@@ -16,6 +16,7 @@ namespace ConsoleApp7
         public Vector3 Position;
         public Shader _shader;
         public Vector3 Velocity = (0f,0f,0f);
+        public Vector3 Delta = (0f,0f,0f);
         //public bool SphereStop = false;
 
         public float Velocity_X;
@@ -59,6 +60,8 @@ namespace ConsoleApp7
         {                       
             _shader.SetMatrix4("translation", Translation);            
         }
+        
+        
                 
 
         public float[] CreateSphere(float Radius, uint Segments, Vector3 Coordinates)
