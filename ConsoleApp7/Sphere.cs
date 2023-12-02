@@ -18,12 +18,10 @@ namespace ConsoleApp7
         public Vector3 Velocity = (0f,0f,0f);
         public Vector3 Delta = (0f,0f,0f);
         //public bool SphereStop = false;
-
-        public float Velocity_X;
-        public float Velocity_Y;
-        public float Velocity_Z;
+        public int SphereCollisionCount = 0;
+        public List<int> SphereColliders = new List<int>();
         //public float k = 0.75f;        
-        
+
         public int VBO;
         public int VAO;
         public int EBO;

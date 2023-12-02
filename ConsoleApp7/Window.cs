@@ -20,6 +20,7 @@ namespace ConsoleApp7
         uint Segments = 40;
         static float Radius = 0.3f;
         static float grid = Radius + 0.005f;
+        Vector3[] Velocities = new Vector3[Nums];
         Vector3 Coordinates = (-2 * grid * resolution / 2, 0.8f * grid * resolution , -2 * grid * resolution / 2);
         Vector3 CoordinatesC = (0f, 12f, 0f);
         static float RadiusC = 0.75f;
@@ -127,44 +128,84 @@ namespace ConsoleApp7
             _time = Math.Min(_time, 1.0 / FrameRate);            
             Console.WriteLine(FPS);
             double dt = _time / AccuracyLim;
-            
-            for (int r = 0; r <= AccuracyLim; r++)
+
+            for (int r = 0; r < AccuracyLim; r++)
             {
                 for (int i = 0; i < Nums; i++)
                 {
                     sphere[i].Velocity.Y = sphere[i].Velocity.Y - 9.81f * (float)dt;
+
                     sphere[i].Delta.Y = sphere[i].Velocity.Y * (float)dt;
                     sphere[i].Delta.X = sphere[i].Velocity.X * (float)dt;
                     sphere[i].Delta.Z = sphere[i].Velocity.Z * (float)dt;
-                    sphere[i].Position += sphere[i].Delta;
 
-                    if (sphere[i].Position.Y < BoundingBox_Y)
+
+                    if (sphere[i].Position.Y + sphere[i].Delta.Y <= BoundingBox_Y)
                     {
-                        sphere[i].Velocity.Y = -1 *sphere[i].Velocity.Y * k;
-                        sphere[i].Position.Y -= 2 * sphere[i].Delta.Y;                        
+                        sphere[i].Velocity = -k * sphere[i].Velocity;
                     }
+                    else
+                    {
+                        sphere[i].Position += sphere[i].Delta;
+                    }
+                    Velocities[i] = sphere[i].Velocity;
+
                 }
+
                 for (int i = 0; i < Nums; i++)
                 {
                     for (int j = 0; j < Nums; j++)
                     {
                         if (j > i && IsCollided(sphere[i], sphere[j]))
                         {
-                            var temp = -sphere[i].Velocity;
-                            sphere[i].Velocity = k * (-sphere[j].Velocity);
-                            sphere[j].Velocity = k * temp;
-                            sphere[i].Position -= sphere[i].Delta;
-                            sphere[j].Position -= sphere[j].Delta;                           
+                            sphere[i].SphereCollisionCount++;
+                            sphere[j].SphereCollisionCount++;
+                            sphere[i].SphereColliders.Add(j);
+                            sphere[j].SphereColliders.Add(i);
                         }
                     }
                 }
+
+                for (int i = 0; i < Nums; i++)
+                {
+                    if (sphere[i].SphereCollisionCount != 0)
+                    {
+                        var sphere2 = sphere[sphere[i].SphereColliders[0]];
+                        sphere[i].Velocity = k * (Velocities[sphere[i].SphereColliders[0]]);
+                        Vector3 Distance = sphere[i].Position - sphere2.Position;
+                        float cos_x = Distance.X / (float)Math.Sqrt(Distance.X * Distance.X + Distance.Y * Distance.Y);
+                        float sin_y = (float)Math.Sqrt(1 - cos_x * cos_x);
+                        float cos_z = Distance.Z / (float)Math.Sqrt(Distance.Z * Distance.Z + Distance.Y * Distance.Y);
+                        if (Distance.X > 0)
+                        {
+                            sphere[i].Position.X = sphere2.Position.X + 2 * Radius * cos_x;
+                        }
+                        else
+                            sphere[i].Position.X = sphere2.Position.X - 2 * Radius * cos_x;
+                        if (Distance.Y > 0)
+                        {
+                            sphere[i].Position.Y = sphere2.Position.Y + 2 * Radius * sin_y;
+                        }
+                        else
+                            sphere[i].Position.Z = sphere2.Position.Y - 2 * Radius * sin_y;
+                        if (Distance.Z > 0)
+                        {
+                            sphere[i].Position.Z = sphere2.Position.Z + 2 * Radius * cos_z;
+                        }
+                        else
+                            sphere[i].Position.Z = sphere2.Position.Z - 2 * Radius * cos_z;
+                    }
+                }
             }
-            
-            
-            for (int i =0; i < Nums; i++)
+
+
+            for (int i = 0; i < Nums; i++)
             {
                 Matrix4 Translation = Matrix4.CreateTranslation(sphere[i].Position);
                 sphere[i].Move(Translation);
+                //NullVelocity(sphere[i]);
+                sphere[i].SphereCollisionCount = 0;
+                sphere[i].SphereColliders.Clear();
             }
 
 
@@ -173,11 +214,12 @@ namespace ConsoleApp7
             {
                 Vector3 Distance = sphere1.Position - sphere2.Position;
                 if (Distance.Length < (2 * Radius))
-                {                    
+                {
                     return true;
                 }
                 return false;
             }
+
 
 
             if (!IsFocused) // Check to see if the window is focused
