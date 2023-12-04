@@ -15,9 +15,9 @@ namespace ConsoleApp7
         {
             var nativeWindowSettings = new NativeWindowSettings()
             {
-                Size = new Vector2i(1280, 720),
+                Size = new Vector2i(1600, 900),
                 Title = "LearnOpenTK - Creating a Window",
-                Location = new Vector2i(350, 250)
+                Location = new Vector2i(150, 150)
                 
             };
 
