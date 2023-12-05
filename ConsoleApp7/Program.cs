@@ -15,14 +15,16 @@ namespace ConsoleApp7
         {
             var nativeWindowSettings = new NativeWindowSettings()
             {
-                Size = new Vector2i(800, 800),
+                Size = new Vector2i(1600, 900),
                 Title = "LearnOpenTK - Creating a Window",
+                Location = new Vector2i(150, 150)
                 
             };
 
             // To create a new window, create a class that extends GameWindow, then call Run() on it.
             using (var window = new Window(GameWindowSettings.Default, nativeWindowSettings))
             {
+
                 window.Run();
             }
 
