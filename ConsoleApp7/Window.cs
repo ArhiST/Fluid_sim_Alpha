@@ -14,20 +14,20 @@ namespace ConsoleApp7
 {
     internal class Window : GameWindow
     {
-        //public static Semaphore Sync = new Semaphore(3, 3);
-        public Thread[] thread = new Thread[Nums];
-        public Thread thread2;
-        public Thread thread3;
+        public static SemaphoreSlim Sync = new (1, 1);
+        public static Semaphore Cores = new(5, 5);
 
-        public static int AccuracyLim = 1;
-        public static double EnergyLoss = 0.895d;
+        int SimActive = 1;
+
+        public static int AccuracyLim = 3;
+        public static double EnergyLoss = 0.9d;
         public float k = (float)Math.Pow(EnergyLoss, (1 / (double)AccuracyLim));
         static float BoundingBox_Y = -6.5f;
-        static int resolution = 10;
+        static int resolution = 15;
         static int Nums = resolution * resolution * resolution;
-        uint Segments = 30;
-        static float Radius = 0.3f;
-        static float grid = Radius + 0.050f;
+        uint Segments = 32;
+        static float Radius = 0.2f;
+        static float grid = Radius + 0.0050f;
         Vector3[] Velocities = new Vector3[Nums];
         Vector3 Coordinates = (-2 * grid * resolution / 2, 0.8f * grid * resolution + 5f, -2 * grid * resolution / 2);
         Vector3 CoordinatesC = (0f, 12f, 0f);
@@ -80,7 +80,7 @@ namespace ConsoleApp7
                     Coordinates = (Coordinates.X - 2 * grid * resolution, Coordinates.Y, Coordinates.Z + 2 * grid);
                 }
                 sphere[i] = new Sphere(Radius, Segments, Coordinates, offset);
-
+                sphere[i].Velocity = (2f, 0f, 1f);
                 Coordinates = (Coordinates.X, Coordinates.Y + 2 * grid, Coordinates.Z);
 
                 offset++;
@@ -126,10 +126,10 @@ namespace ConsoleApp7
 
 
         }
-        protected override void OnUpdateFrame(FrameEventArgs e)
+        protected override async void OnUpdateFrame(FrameEventArgs e)
         {
             base.OnUpdateFrame(e);
-
+            
             _time = e.Time;
             //_time = (1.0d / 75.0d);
             double FrameRate = 75;
@@ -137,29 +137,57 @@ namespace ConsoleApp7
             float FPS = 1.0f / (float)_time;
             _time = Math.Min(_time, 1.0 / FrameRate);
             Console.WriteLine(FPS);
-            double dt = _time / AccuracyLim;          
+            double dt = _time / AccuracyLim;
 
-            
-            ProcessPhysics(dt);
-            
-            //Task.Run(()=>ProcessPhysicsAsync(dt));
+
+            //ProcessPhysics(dt, 0, Nums);
             //Task.WaitAll();
+            int Sim_Division = Nums / 2;
+
+            Task.Run(() => ProcessPhysicsAsync(dt, 0, Nums));
+            //Task.WaitAll();
+            //Task.Run(() => ProcessPhysicsAsync(dt, Sim_Division, Nums));
+            //Thread.Sleep(10);
+
+            //await ProcessPhysicsAsync(dt);
 
             for (int i = 0; i < Nums; i++)
             {
-                Matrix4 Translation = Matrix4.CreateTranslation(sphere[i].Position);
-                sphere[i].Move(Translation);
-                //NullVelocity(sphere[i]);
-                sphere[i].SphereCollisionCount = 0;
-                sphere[i].SphereColliders.Clear();
+                if (sphere[i].Syncronized || SimActive % 2 == 0)
+                {
+                    Matrix4 Translation = Matrix4.CreateTranslation(sphere[i].Position);
+                    sphere[i].Move(Translation);
+                    sphere[i].SphereCollisionCount = 0;
+                    sphere[i].SphereColliders.Clear();
+                    sphere[i].Syncronized = false;
+                }
+                else
+                {
+                    i--;
+                }                
             }
+            //task1.Wait();
 
 
             if (!IsFocused) // Check to see if the window is focused
             {
                 return;
             }
+
             var input = KeyboardState;
+            
+            if(input.IsKeyReleased(Keys.Space)) 
+            {
+                SimActive++;
+            }
+            if (input.IsKeyPressed(Keys.R))
+            {
+                for (int i = 0;i < Nums;i++)
+                {
+                    sphere[i].Position = sphere[i].Coordinates;
+                    sphere[i].Velocity = Vector3.Zero;
+                }
+            }
             /*float cameraSpeed = 3f;             
             if (input.IsKeyPressed(Keys.S))
             {
@@ -183,33 +211,31 @@ namespace ConsoleApp7
 
 
 
-        public void ProcessPhysics(double dt)
+        public void ProcessPhysics(double dt, int i, int k)
         {
             for (int r = 0; r < AccuracyLim; r++)
-            {                
-                GravityAndBoundingBox(dt);
-                
-                //Sphere2SphereCollisionDetermine();
-                //Sphere2SphereCollisionCalculate();                
+            {
+                if (SimActive % 2 == 1)
+                {
+                    GravityAndBoundingBox(dt);
+                    Sphere2SphereCollisionDetermine(i, k);
+                    Sphere2SphereCollisionCalculate(i, k);
+                }                               
             }
         }
 
-        //private async Task<bool> ProcessPhysicsAsync(double dt)
-        //{
-        //    try
-        //    {
-        //        await syncObj.WaitAsync();
-        //        ProcessPhysics(dt);
-        //    }
-        //    finally
-        //    {
-        //        syncObj.Release();
-        //    }
-        //    return true;
-        //}
+        private async Task ProcessPhysicsAsync(double dt, int i, int k)
+        {
+
+            await Sync.WaitAsync();
+            ProcessPhysics(dt, i, k);
+            Sync.Release();
+
+            //return true;
+        }
 
         public void GravityAndBoundingBox(double dt)
-        {
+        {            
             for (int i = 0; i < Nums; i++)
             {                
                 sphere[i].Velocity.Y = sphere[i].Velocity.Y - 9.81f * (float)dt;
@@ -217,101 +243,79 @@ namespace ConsoleApp7
                 sphere[i].Delta.X = sphere[i].Velocity.X * (float)dt;
                 sphere[i].Delta.Z = sphere[i].Velocity.Z * (float)dt;
 
-                int j = -1;
-                for (j = 0 ; j < Nums - 1 ; j++) 
+                if (sphere[i].Position.Y + sphere[i].Delta.Y <= BoundingBox_Y)
                 {
-                    thread[j] = new Thread(() =>
-                    {                        
-                        if (sphere[j].Position.Y + sphere[j].Delta.Y <= BoundingBox_Y)
-                        {
-                        if (sphere[j].Velocity.Y < 0)
-                            sphere[j].Velocity = -k * sphere[j].Velocity;
-                        }
-                        else
-                        {
-                            sphere[j].Position += sphere[j].Delta;
-                        }
-                        Velocities[j] = sphere[j].Velocity;                        
-                    });
-                    thread[j].Start();
-                    
-                        
-                }              
-                             
-                                                
+                    if (sphere[i].Velocity.Y < 0)
+                        sphere[i].Velocity = -k * sphere[i].Velocity;
+                }
+                else
+                {
+                    sphere[i].Position += sphere[i].Delta;
+                }
+                Velocities[i] = sphere[i].Velocity;
             }
         }
 
-        public void Sphere2SphereCollisionDetermine()
+        public void Sphere2SphereCollisionDetermine(int num1, int num2)
         {
-            
-                thread2 = new Thread(() =>
-                {                    
-                    for (int i = 0; i < Nums; i++)
-                    {
-                        for (int j = 0; j < Nums; j++)
-                        {
-                            if (j > i && IsCollided(sphere[i], sphere[j]))
-                            {
-                                sphere[i].SphereCollisionCount++;
-                                sphere[j].SphereCollisionCount++;
-                                sphere[i].SphereColliders.Add(j);
-                                sphere[j].SphereColliders.Add(i);
-                            }
-                        }
-                    }                   
-                });
-                thread2.Start();
-           
-            
-        }
-
-        public void Sphere2SphereCollisionCalculate()
-        {
-            
-                thread3 = new Thread(() =>
+            for (int i = num1; i < num2; i++)
+            {
+                for (int j = num1; j < num2; j++)
                 {
-                    
-                    for (int i = 0; i < Nums; i++)
+                    if (j > i && IsCollided(sphere[i], sphere[j]))
                     {
-                        if (sphere[i].SphereCollisionCount != 0)
-                        {
-                            var sphere2 = sphere[sphere[i].SphereColliders[0]];
-                            sphere[i].Velocity = k * (Velocities[sphere[i].SphereColliders[0]]);
-                            Vector3 Distance = sphere[i].Position - sphere2.Position;
-                            float cos_x = Distance.X / (float)Math.Sqrt(Distance.X * Distance.X + Distance.Y * Distance.Y);
-                            float sin_y = (float)Math.Sqrt(1 - cos_x * cos_x);
-                            float cos_z = Distance.Z / (float)Math.Sqrt(Distance.Z * Distance.Z + Distance.Y * Distance.Y);
-                            if (Distance.X > 0)
-                            {
-                                sphere[i].Position.X = sphere2.Position.X + 2 * Radius * cos_x;
-                            }
-                            else
-                                sphere[i].Position.X = sphere2.Position.X - 2 * Radius * cos_x;
-                            if (Distance.Y > 0)
-                            {
-                                sphere[i].Position.Y = sphere2.Position.Y + 2 * Radius * sin_y;
-                            }
-                            else
-                                sphere[i].Position.Z = sphere2.Position.Y - 2 * Radius * sin_y;
-                            if (Distance.Z > 0)
-                            {
-                                sphere[i].Position.Z = sphere2.Position.Z + 2 * Radius * cos_z;
-                            }
-                            else
-                                sphere[i].Position.Z = sphere2.Position.Z - 2 * Radius * cos_z;
-                        }
-                        if (sphere[i].SphereCollisionCount == 2)
-                        {
-                            sphere[i].Velocity = Vector3.Zero;
-                            sphere[i].Position -= sphere[i].Delta;
-                        }
+                        sphere[i].SphereCollisionCount++;
+                        sphere[j].SphereCollisionCount++;
+                        sphere[i].SphereColliders.Add(j);
+                        sphere[j].SphereColliders.Add(i);
                     }
-                    
-                });
-                thread3.Start();
+                }
+            }
+        }           
+
+        public void Sphere2SphereCollisionCalculate(int num1, int num2)
+        {
+            for( int i = num1; i < num2; i++)
+            {
+                if (sphere[i].SphereCollisionCount != 0)
+                {
+                    for(int j = 0; j < sphere[i].SphereCollisionCount; j++)
+                    {
+                        var sphere2 = sphere[sphere[i].SphereColliders[j]];
+                        sphere[i].Velocity = k * (Velocities[sphere[i].SphereColliders[j]]);
+                        Vector3 Distance = sphere[i].Position - sphere2.Position;
+                        float cos_x = Distance.X / (float)Math.Sqrt(Distance.X * Distance.X + Distance.Y * Distance.Y);
+                        float sin_y = (float)Math.Sqrt(1 - cos_x * cos_x);
+                        float cos_z = Distance.Z / (float)Math.Sqrt(Distance.Z * Distance.Z + Distance.Y * Distance.Y);
+                        if (Distance.X > 0)
+                        {
+                            sphere[i].Position.X = sphere2.Position.X + 2 * Radius * cos_x;
+                        }
+                        else
+                            sphere[i].Position.X = sphere2.Position.X - 2 * Radius * cos_x;
+                        if (Distance.Y > 0)
+                        {
+                            sphere[i].Position.Y = sphere2.Position.Y + 2 * Radius * sin_y;
+                        }
+                        else
+                            sphere[i].Position.Z = sphere2.Position.Y - 2 * Radius * sin_y;
+                        if (Distance.Z > 0)
+                        {
+                            sphere[i].Position.Z = sphere2.Position.Z + 2 * Radius * cos_z;
+                        }
+                        else
+                            sphere[i].Position.Z = sphere2.Position.Z - 2 * Radius * cos_z;
+                    }                    
+                }
+                if (sphere[i].SphereCollisionCount % 2 == 0 && sphere[i].SphereCollisionCount != 0)
+                {
+                    sphere[i].Velocity = Vector3.Zero;
+                    //sphere[i].Position -= sphere[i].Delta;
+                }
+                sphere[i].Syncronized = true;
+            }
+               
             
-                
         }
         protected override void OnResize(ResizeEventArgs e)
         {
@@ -330,11 +334,7 @@ namespace ConsoleApp7
                 GL.DeleteVertexArray(sphere[i].VAO);
                 GL.DeleteProgram(sphere[i]._shader.Handle);
             }
-
-
             base.OnUnload();
         }
-
-
     }
 }

@@ -14,10 +14,11 @@ namespace ConsoleApp7
         float[] Verticies;
         public uint[] Indicies;        
         public Vector3 Position;
+        public Vector3 Coordinates;
         public Shader _shader;
         public Vector3 Velocity = (0f,0f,0f);
         public Vector3 Delta = (0f,0f,0f);
-        //public bool SphereStop = false;
+        public bool Syncronized = true;
         public int SphereCollisionCount = 0;
         public List<int> SphereColliders = new List<int>();
         //public float k = 0.75f;        
@@ -28,7 +29,7 @@ namespace ConsoleApp7
 
         public Sphere(float Radius, uint Segments, Vector3 coordinates, int offset)
         {
-            //Coordinates = coordinates;
+            Coordinates = coordinates;
             Position = coordinates;
             
             Verticies = CreateSphere(Radius, Segments, (0f, 0f, 0f));
